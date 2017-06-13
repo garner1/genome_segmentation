@@ -32,8 +32,8 @@ windows <- Views(reverse(seqChr), start=seq(from=1,to=length(seqChr)-(in_dim + o
 df <- rbind(data.frame(start=start(windows), end=end(windows), seq=as.character(windows)))
 filename <- paste('~/Work/dataset/genome_segmentation/views_',as.character(name),"_",as.character(in_dim),"to",as.character(out_dim),'_RL.csv', sep='')
 fwrite(x=df, file=filename, append=FALSE, row.names=FALSE)
-Tmat_LR_norm <- Tmat_LR/rowSums(Tmat_LR)
-Tmat_RL_norm <- Tmat_RL/rowSums(Tmat_RL)
+Tmat_LR_norm <- -log(Tmat_LR/rowSums(Tmat_LR)) # evaluate the information of the probability
+Tmat_RL_norm <- -log(Tmat_RL/rowSums(Tmat_RL)) # evaluate the information of the probability
 
 key <- c()
 value <- c()
