@@ -1,63 +1,92 @@
 #!/usr/bin/env bash
 
-# in_dim=3
-# out_dim=1
+# in_dim=6
+# out_dim=3
+datadir=~/Work/dataset/genome_segmentation
+chr=chr21
 
-# # First run the R-script
+# echo 'First run the R-script which produces the relevant view (chromosomes, genes, etc) and the relevant markov chain parameters.'
 # # Rscript get_kmer.R		
 # # R < get_kmer.R --no-save  
+# echo 'Done'
 
-# echo "Parsing views ..."
-# # parallel bash parse_views.sh {} ::: /home/garner1/Work/dataset/genome_segmentation/views_chr{?,??}_"$in_dim"to"$out_dim"_{LR,RL}.csv
+# for in_dim in 3 4 5 6 7 8
+# do
+#     out_dim=$((9-$in_dim))
+#     bash ./preprocessing.sh $in_dim $out_dim $datadir $chr 
+# done
 
-# parallel bash parse_views.sh {} ::: /home/garner1/Work/dataset/genome_segmentation/views_chr21_"$in_dim"to"$out_dim"_{LR,RL}.csv
+# LC_ALL=C join $datadir/input_to_peak__chr21_3to6_LR.csv $datadir/input_to_peak__chr21_4to5_LR.csv | 
+# LC_ALL=C join - $datadir/input_to_peak__chr21_5to4_LR.csv | 
+# LC_ALL=C join - $datadir/input_to_peak__chr21_6to3_LR.csv | 
+# LC_ALL=C join - $datadir/input_to_peak__chr21_7to2_LR.csv | 
+# LC_ALL=C join - $datadir/input_to_peak__chr21_8to1_LR.csv |
+# awk '{print $1,$2+$3+$4+$5+$6+$7}' | LC_ALL=C sort -k1,1n > $datadir/joined_"$chr".csv
 
-# parallel bash parse_transitionMat.sh {} ::: /home/garner1/Work/dataset/genome_segmentation/transitionMatrix_"$in_dim"to"$out_dim"_{LR,RL}.csv
-# echo "Done"
-
-# echo "Joining views and transition matrices ..."
-# # parallel "rm -f ~/joined_{}; LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' /home/garner1/Work/dataset/genome_segmentation/transitionMatrix_'\$in_dim'to'\$out_dim'_LR.csv {} | LC_ALL=C sort -t',' -k1,1n -o {.}joined" ::: `ls /home/garner1/Work/dataset/genome_segmentation/views_chr{?,??}_"$in_dim"to"$out_dim"_LR.csv`
-# # parallel "rm -f ~/joined_{}; LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' /home/garner1/Work/dataset/genome_segmentation/transitionMatrix_'\$in_dim'to'\$out_dim'_RL.csv {} | LC_ALL=C sort -t',' -k1,1n -o {.}joined" ::: `ls /home/garner1/Work/dataset/genome_segmentation/views_chr{?,??}_"$in_dim"to"$out_dim"_RL.csv`
-
-# LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' /home/garner1/Work/dataset/genome_segmentation/transitionMatrix_"$in_dim"to"$out_dim"_LR.csv /home/garner1/Work/dataset/genome_segmentation/views_chr21_"$in_dim"to"$out_dim"_LR.csv | LC_ALL=C sort -t',' -k1,1n -o /home/garner1/Work/dataset/genome_segmentation/views_chr21_"$in_dim"to"$out_dim"_LR.csv.joined
-# LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' /home/garner1/Work/dataset/genome_segmentation/transitionMatrix_"$in_dim"to"$out_dim"_RL.csv /home/garner1/Work/dataset/genome_segmentation/views_chr21_"$in_dim"to"$out_dim"_LR.csv | LC_ALL=C sort -t',' -k1,1n -o /home/garner1/Work/dataset/genome_segmentation/views_chr21_"$in_dim"to"$out_dim"_RL.csv.joined
-
-# echo "Done"
-
-# echo "Find local maxima in information ..."
-# python find_peaks.py ~/Work/dataset/genome_segmentation/views_chr21_3to1_LR.csv.joined ~/Work/dataset/genome_segmentation/word_forward.csv & pid1=$! 
-# python find_peaks.py ~/Work/dataset/genome_segmentation/views_chr21_3to1_RL.csv.joined ~/Work/dataset/genome_segmentation/word_reverse.csv & pid2=$!
-# wait $pid1
-# wait $pid2
+# echo "Find local maxima in the information profile ..."
+# python find_peaks.py $datadir/joined_"$chr".csv $datadir/plusStrand-forward__"$chr".csv
 # echo "Done"
 
 # echo "Generate the words' bed files ..."
-# cut -d',' -f2 ~/Work/dataset/genome_segmentation/word_forward.csv | 
-# grep -v position | 
-# awk 'NR==1{start=$1;next}{OFS="\t";print "chr21",start,$1,"forward","1","+";start=$1}' > ~/Work/dataset/genome_segmentation/word_forward.bed & pid1=$!
-# cut -d',' -f2 ~/Work/dataset/genome_segmentation/word_reverse.csv | 
-# grep -v position | 
-# awk 'NR==1{start=$1;next}{OFS="\t";print "chr21",start,$1,"reverse","1","-";start=$1}' > ~/Work/dataset/genome_segmentation/word_reverse.bed & pid2=$!
-# wait $pid1
-# wait $pid2
+# cut -d',' -f2 $datadir/plusStrand-forward__"$chr".csv | grep -v position | 
+# awk -v chr="$chr" 'NR==1{start=$1;next}{OFS="\t";print chr,start,$1,"forward","1","+";start=$1}' > $datadir/word_forward__"$chr".bed
 # echo "Done"
 
 # echo "Make dictionary ..."
-# bedtools getfasta -fi ~/igv/genomes/hg19.fasta -bed ~/Work/dataset/genome_segmentation/word_reverse.bed -s -tab -fo ~/Work/dataset/genome_segmentation/word_reverse.dic & pid1=$!
-# bedtools getfasta -fi ~/igv/genomes/hg19.fasta -bed ~/Work/dataset/genome_segmentation/word_forward.bed -s -tab -fo ~/Work/dataset/genome_segmentation/word_forward.dic & pid2=$!
-# wait $pid1
-# wait $pid2
-# cat ~/Work/dataset/genome_segmentation/word_reverse.dic | sed 's/(-)//' | tr ':-' '\t\t' | awk '{print $0"\t1\t-"}' > tmp1.aux && mv tmp1.aux ~/Work/dataset/genome_segmentation/word_reverse.dic & pid1=$!
-# cat ~/Work/dataset/genome_segmentation/word_forward.dic | sed 's/(+)//' | tr ':-' '\t\t' | awk '{print $0"\t1\t+"}' > tmp2.aux && mv tmp2.aux ~/Work/dataset/genome_segmentation/word_forward.dic & pid2=$!
-# wait $pid1
-# wait $pid2
+# bedtools getfasta -fi ~/igv/genomes/hg19.fasta -bed $datadir/word_forward__"$chr".bed -s -tab -fo $datadir/word_forward__"$chr".dic
+# cat $datadir/word_forward__"$chr".dic | sed 's/(+)//' | tr ':-' '\t\t' | awk '{print $0"\t1\t+"}' > tmp.aux && mv tmp.aux $datadir/word_forward__"$chr".dic
 # echo "Done"
 
-echo "Create word pairs with max distance of 1Kbp (this is memory intensive) ..."
-cp ~/Work/dataset/genome_segmentation/word_reverse.dic ~/Work/dataset/genome_segmentation/word_reverse_copy.dic
-cp ~/Work/dataset/genome_segmentation/word_forward.dic ~/Work/dataset/genome_segmentation/word_forward_copy.dic
-bedtools window -a ~/Work/dataset/genome_segmentation/word_reverse.dic -b ~/Work/dataset/genome_segmentation/word_reverse_copy.dic -sm | awk '$8>$2' > ~/Work/dataset/genome_segmentation/wordPairs_reverse.dic & pid1=$!
-bedtools window -a ~/Work/dataset/genome_segmentation/word_forward.dic -b ~/Work/dataset/genome_segmentation/word_forward_copy.dic -sm | awk '$8>$2' > ~/Work/dataset/genome_segmentation/wordPairs_forward.dic & pid2=$!
-wait $pid1
-wait $pid2
+# echo "Produce word-contect counts ..."
+# echo "Create ordered word pairs (count how many times word1 is to the left of word2 inside a context window) within a context of size window ..."
+# window=10
+# python count_pairs.py $datadir/word_forward__"$chr".dic $window # file output is *_counter.txt
+# cat $datadir/word_forward__"$chr".dic_counter.txt | tr -d '(',')',"'" | tr ' ' '\t' | LC_ALL=C grep -v N > $datadir/word_forward__"$chr".dic_counter.txt.aux && mv $datadir/word_forward__"$chr".dic_counter.txt.aux $datadir/word_forward__"$chr".dic_counter.txt
+# echo "Done"
+
+# echo "Prepare vocabulary: a 1to1 word-index map"
+# cat $datadir/word_forward__"$chr".dic_counter.txt | cut -f-2 | tr '\t' '\n' | LC_ALL=C sort | LC_ALL=C uniq | cat -n | awk '{print $2,$1}' > $datadir/vocabulary
+# echo "Done"
+
+# echo "Associate matrix indeces to word-context pairs: the final .mat has word-context-count-row-col format"
+# cat $datadir/word_forward__"$chr".dic_counter.txt| LC_ALL=C sort -k1,1 | LC_ALL=C join -1 1 -2 1 -o 1.1,1.2,1.3,2.2 - $datadir/vocabulary | tr ' ' '\t' |
+# LC_ALL=C sort -k2,2 | LC_ALL=C join -1 2 -2 1 -o 1.1,1.2,1.3,1.4,2.2 - $datadir/vocabulary | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.mat
+# echo "Done"
+
+# echo "Count the marginales of each word and context"
+# cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 4 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale
+# cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 5 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale
+# echo "Done"
+
+echo "Prepare the sparse matrix in coo format: word-context-count-wordmarg-contextmarg-pmi"
+# LC_ALL=C sort -n -k4,4 $datadir/word_forward__"$chr".dic_counter.txt.mat | LC_ALL=C join -o 1.4,1.5,1.3,2.2  -1 4 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale | tr ' ' '\t' |
+# LC_ALL=C sort -n -k2,2 - | LC_ALL=C join -o 1.1,1.2,1.3,1.4,2.2  -1 2 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale | 
+# awk '{print $1,$2,$3,$4,$5,$3/($4*$5)}' | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat 
+D=`cat $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat|wc -l`
+cat $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat | awk -v D="$D" '{OFS="\t";print $1,$2,$3,$4,$5,$6*D}' > $datadir/"$chr".mat
+
+D=`cat $datadir/vocabulary|wc -l` # size of the vocabulary
+k=2				  # shift factor in SPPMI
+rank=3				  # truncation dim in svd
+python cooccurrence_matrix.py $datadir/"$chr".mat $D $k $rank
 echo "Done"
+
+# mv $datadir/word_forward__"$chr".dic_counter.txt.mat $datadir/"$chr"_"$indim"to"$outdim"__word-context-counts-indexWord-indexContext.mat
+# rm -f $datadir/vocabulary $datadir/*{joined,bed,csv,dic,txt,normalized*,contextMarginale,wordMarginale}
+
+######################################
+######################################
+# # # parallel bash parse_views.sh {} ::: $datadir/views_chr{?,??}_"$in_dim"to"$out_dim"_{LR,RL}.csv
+
+# # parallel "rm -f ~/joined_{}; LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' $datadir/transitionMatrix_'\$in_dim'to'\$out_dim'_LR.csv {} | LC_ALL=C sort -t',' -k1,1n -o {.}joined" ::: `ls $datadir/views_chr{?,??}_"$in_dim"to"$out_dim"_LR.csv`
+# # parallel "rm -f ~/joined_{}; LC_ALL=C join -1 1 -2 3 -o 2.1 2.2 1.1 1.2 -t',' $datadir/transitionMatrix_'\$in_dim'to'\$out_dim'_RL.csv {} | LC_ALL=C sort -t',' -k1,1n -o {.}joined" ::: `ls $datadir/views_chr{?,??}_"$in_dim"to"$out_dim"_RL.csv`
+
+# echo "Create word pairs with max distance of 1Kbp (this is memory intensive) ..."
+# cp $datadir/word_reverse.dic $datadir/word_reverse_copy.dic
+# cp $datadir/word_forward__"$chr".dic $datadir/word_forward__"$chr"_copy.dic
+# bedtools window -a $datadir/word_reverse.dic -b $datadir/word_reverse_copy.dic -sm | awk '$8>$2' > $datadir/wordPairs_reverse_"$in_dim"to"$out_dim".dic & pid1=$!
+# bedtools window -a $datadir/word_forward__"$chr".dic -b $datadir/word_forward__"$chr"_copy.dic -sm | awk '$8>$2' > $datadir/wordPairs_forward_"$in_dim"to"$out_dim".dic & pid2=$!
+# wait $pid1
+# wait $pid2
+# rm -f $datadir/word_*_copy.dic
+# echo "Done"

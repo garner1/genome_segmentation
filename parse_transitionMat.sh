@@ -2,6 +2,5 @@
 
 input=$1			# linearized input file
 
-temp="$(mktemp)"
-
-tail -n+2 $input | cut -d',' -f2- | sed 's/"//g' > $temp && mv $temp $input 
+name=`echo $input|cut -d'/' -f5`
+tail -n+2 $input | cut -d',' -f2- | sed 's/"//g' > ~/Work/dataset/genome_segmentation/"$name"
