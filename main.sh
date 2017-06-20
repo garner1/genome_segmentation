@@ -19,49 +19,49 @@ chr=chr21
 # LC_ALL=C join $datadir/input_to_peak__chr21_3to6_LR.csv $datadir/input_to_peak__chr21_4to5_LR.csv | 
 # LC_ALL=C join - $datadir/input_to_peak__chr21_5to4_LR.csv | 
 # LC_ALL=C join - $datadir/input_to_peak__chr21_6to3_LR.csv | 
-# LC_ALL=C join - $datadir/input_to_peak__chr21_7to2_LR.csv | 
-# LC_ALL=C join - $datadir/input_to_peak__chr21_8to1_LR.csv |
-# awk '{print $1,$2+$3+$4+$5+$6+$7}' | LC_ALL=C sort -k1,1n > $datadir/joined_"$chr".csv
+# awk '{print $1,$2/6+$3/5+$4/4+$5/3}' | LC_ALL=C sort -k1,1n > $datadir/joined_"$chr".csv # divide by the log(out_dim) to account for dim-scaling
 
 # echo "Find local maxima in the information profile ..."
 # python find_peaks.py $datadir/joined_"$chr".csv $datadir/plusStrand-forward__"$chr".csv
 # echo "Done"
 
-# echo "Generate the words' bed files ..."
-# cut -d',' -f2 $datadir/plusStrand-forward__"$chr".csv | grep -v position | 
+# echo "Generate the words' bed files after removing close local maxima..."
+# tail -n+2 $datadir/plusStrand-forward__chr21.csv | tr ',' ' ' |
+# awk 'NR==1{print $2,$3;pos=$2;max=$3;next}{print $2,$3,$2-pos,$3-max;pos=$2;max=$3}' | awk '$3!=2 || $4>0' | # filter out close maxima
+# awk 'NR==1{pos=$1;max=$2;next}$3<3{pos=$1;max=$2}$3>2{print pos;pos=$1;max=$2}' |
 # awk -v chr="$chr" 'NR==1{start=$1;next}{OFS="\t";print chr,start,$1,"forward","1","+";start=$1}' > $datadir/word_forward__"$chr".bed
-# echo "Done"
+# echo 'Done'
 
 # echo "Make dictionary ..."
 # bedtools getfasta -fi ~/igv/genomes/hg19.fasta -bed $datadir/word_forward__"$chr".bed -s -tab -fo $datadir/word_forward__"$chr".dic
 # cat $datadir/word_forward__"$chr".dic | sed 's/(+)//' | tr ':-' '\t\t' | awk '{print $0"\t1\t+"}' > tmp.aux && mv tmp.aux $datadir/word_forward__"$chr".dic
 # echo "Done"
 
-# echo "Produce word-contect counts ..."
-# echo "Create ordered word pairs (count how many times word1 is to the left of word2 inside a context window) within a context of size window ..."
-# window=10
-# python count_pairs.py $datadir/word_forward__"$chr".dic $window # file output is *_counter.txt
-# cat $datadir/word_forward__"$chr".dic_counter.txt | tr -d '(',')',"'" | tr ' ' '\t' | LC_ALL=C grep -v N > $datadir/word_forward__"$chr".dic_counter.txt.aux && mv $datadir/word_forward__"$chr".dic_counter.txt.aux $datadir/word_forward__"$chr".dic_counter.txt
-# echo "Done"
+echo "Produce word-contect counts ..."
+echo "Create ordered word pairs (count how many times word1 is to the left of word2 inside a context window) within a context of size window ..."
+window=10
+python count_pairs.py $datadir/word_forward__"$chr".dic $window # file output is *_counter.txt
+cat $datadir/word_forward__"$chr".dic_counter.txt | tr -d '(',')',"'" | tr ' ' '\t' | LC_ALL=C grep -v N > $datadir/word_forward__"$chr".dic_counter.txt.aux && mv $datadir/word_forward__"$chr".dic_counter.txt.aux $datadir/word_forward__"$chr".dic_counter.txt
+echo "Done"
 
-# echo "Prepare vocabulary: a 1to1 word-index map"
-# cat $datadir/word_forward__"$chr".dic_counter.txt | cut -f-2 | tr '\t' '\n' | LC_ALL=C sort | LC_ALL=C uniq | cat -n | awk '{print $2,$1}' > $datadir/vocabulary
-# echo "Done"
+echo "Prepare vocabulary: a 1to1 word-index map"
+cat $datadir/word_forward__"$chr".dic_counter.txt | cut -f-2 | tr '\t' '\n' | LC_ALL=C sort | LC_ALL=C uniq | cat -n | awk '{print $2,$1}' > $datadir/vocabulary
+echo "Done"
 
-# echo "Associate matrix indeces to word-context pairs: the final .mat has word-context-count-row-col format"
-# cat $datadir/word_forward__"$chr".dic_counter.txt| LC_ALL=C sort -k1,1 | LC_ALL=C join -1 1 -2 1 -o 1.1,1.2,1.3,2.2 - $datadir/vocabulary | tr ' ' '\t' |
-# LC_ALL=C sort -k2,2 | LC_ALL=C join -1 2 -2 1 -o 1.1,1.2,1.3,1.4,2.2 - $datadir/vocabulary | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.mat
-# echo "Done"
+echo "Associate matrix indeces to word-context pairs: the final .mat has word-context-count-row-col format"
+cat $datadir/word_forward__"$chr".dic_counter.txt| LC_ALL=C sort -k1,1 | LC_ALL=C join -1 1 -2 1 -o 1.1,1.2,1.3,2.2 - $datadir/vocabulary | tr ' ' '\t' |
+LC_ALL=C sort -k2,2 | LC_ALL=C join -1 2 -2 1 -o 1.1,1.2,1.3,1.4,2.2 - $datadir/vocabulary | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.mat
+echo "Done"
 
-# echo "Count the marginales of each word and context"
-# cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 4 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale
-# cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 5 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale
-# echo "Done"
+echo "Count the marginales of each word and context"
+cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 4 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale
+cat $datadir/word_forward__"$chr".dic_counter.txt.mat | datamash -s -g 5 sum 3|LC_ALL=C sort -n -k1,1 > $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale
+echo "Done"
 
 echo "Prepare the sparse matrix in coo format: word-context-count-wordmarg-contextmarg-pmi"
-# LC_ALL=C sort -n -k4,4 $datadir/word_forward__"$chr".dic_counter.txt.mat | LC_ALL=C join -o 1.4,1.5,1.3,2.2  -1 4 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale | tr ' ' '\t' |
-# LC_ALL=C sort -n -k2,2 - | LC_ALL=C join -o 1.1,1.2,1.3,1.4,2.2  -1 2 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale | 
-# awk '{print $1,$2,$3,$4,$5,$3/($4*$5)}' | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat 
+LC_ALL=C sort -n -k4,4 $datadir/word_forward__"$chr".dic_counter.txt.mat | LC_ALL=C join -o 1.4,1.5,1.3,2.2  -1 4 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.wordMarginale | tr ' ' '\t' |
+LC_ALL=C sort -n -k2,2 - | LC_ALL=C join -o 1.1,1.2,1.3,1.4,2.2  -1 2 -2 1 - $datadir/word_forward__"$chr".dic_counter.txt.mat.contextMarginale | 
+awk '{print $1,$2,$3,$4,$5,$3/($4*$5)}' | tr ' ' '\t' > $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat 
 D=`cat $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat|wc -l`
 cat $datadir/word_forward__"$chr".dic_counter.txt.normalized.mat | awk -v D="$D" '{OFS="\t";print $1,$2,$3,$4,$5,$6*D}' > $datadir/"$chr".mat
 

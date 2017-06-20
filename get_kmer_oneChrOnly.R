@@ -6,7 +6,7 @@ library(data.table)
 cnames = seqnames(Hsapiens)[1:24]
 
 # loop of the dimensions of the markov chain, with in_dim from 3 to 8 and out_dim from 6 to 1, respectivelly 
-for(in_dim in 3:8){
+for(in_dim in 3:6){
 out_dim = 9-in_dim
 
 name = cnames[21]
