@@ -20,7 +20,8 @@ with open(file_name, 'rb') as infile:
         lista = line.strip().split('\t')
         r.append(int(lista[0])-1) # minus 1 because python counts from 0
         c.append(int(lista[1])-1)
-        data = int(lista[2])*1./(int(lista[3])*int(lista[4])*k)
+        # data = int(lista[2])*1./(int(lista[3])*int(lista[4])*k)
+        data = float(lista[2])*1./(float(lista[3])*float(lista[4])*k)
         d.append(data)
 
 coomat = coo_matrix((d, (r, c)), shape=(dim, dim),dtype=float16) # sparse mat in coordinate format

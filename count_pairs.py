@@ -19,8 +19,11 @@ def collect_pairs(file_name,window):
             lista = re.split('\t',line.strip())
             context.append(lista[3])
             if count > window:
-                for index in range(count-window+1,count):
-                    pair_counter[(context[count-window],context[index])] += 1
+                for index in range(window):
+                    weight = 1.0/abs(window-index)                    
+                    pair_counter[(context[count-window],context[index])] += weight
+                context = []
+                count = 0
     return pair_counter
     
 p = collect_pairs(file_name,window)
