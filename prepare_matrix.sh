@@ -18,7 +18,6 @@ LC_ALL=C sort -n -k4,4 $datadir/segmented__"$chr".dic_counter.txt.mat |
 LC_ALL=C join -o 1.4,1.5,1.3,2.2  -1 4 -2 1 - $datadir/segmented__"$chr".dic_counter.txt.mat.wordMarginale | tr ' ' '\t' |
 LC_ALL=C sort -n -k2,2 - | 
 LC_ALL=C join -o 1.1,1.2,1.3,1.4,2.2  -1 2 -2 1 - $datadir/segmented__"$chr".dic_counter.txt.mat.contextMarginale | 
-awk '{print $1,$2,$3,$4,$5,$3/($4*$5)}' | tr ' ' '\t' > $datadir/segmented__"$chr".dic_counter.txt.normalized.mat 
+awk '{print $1,$2,$3,$4,$5}' | tr ' ' '\t' > $datadir/"$chr".mat
 
-D=`cat $datadir/segmented__"$chr".dic_counter.txt.normalized.mat|wc -l`
-cat $datadir/segmented__"$chr".dic_counter.txt.normalized.mat | awk -v D="$D" '{OFS="\t";print $1,$2,$3,$4,$5,$6*D}' > $datadir/"$chr".mat
+cp $datadir/segmented__"$chr".dic_counter.txt.mat $datadir/"$chr"_"$indim"to"$outdim"__word-context-counts-indexWord-indexContext.mat

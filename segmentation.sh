@@ -21,5 +21,5 @@ echo "Done d=8"
 bash aggregate.sh $datadir/aux8.bed $datadir/aux9.bed 9 $chr # cluster extrema closer than 9
 echo "Done d=9"
 cat $datadir/aux9.bed |
-awk -v chr="$chr" 'NR==1{start=$1;next}{OFS="\t";print chr,start,$1,"forward",$2,"+";start=$1}' > $datadir/word_forward__"$chr".bed 
+awk -v chr="$chr" 'NR==1{start=$1;next}{OFS="\t";print chr,start,$1,"forward",$2,"+";start=$1}' > $datadir/segmented__"$chr".bed 
 rm -f $datadir/aux?.bed
