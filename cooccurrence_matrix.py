@@ -20,15 +20,19 @@ with open(file_name, 'rb') as infile:
         lista = line.strip().split('\t')
         r.append(int(lista[0])-1) # minus 1 because python counts from 0
         c.append(int(lista[1])-1)
-        # data = int(lista[2])*1./(int(lista[3])*int(lista[4])*k)
         data = float(lista[2])*1./(float(lista[3])*float(lista[4])*k)
         d.append(data)
 
 coomat = coo_matrix((d, (r, c)), shape=(dim, dim),dtype=float16) # sparse mat in coordinate format
-coomat.data = ma.log(coomat.nnz*coomat.data) # SPPMI
+# coomat = 0.5*(coomat + transpose(coomat)) # this is useless since it is already symm
+coomat.data = ma.log(0.5*coomat.nnz*coomat.data) # SPPMI
 coomat.data = ma.masked_less(coomat.data, 0)
 
 [u,s,vt] = svds(coomat, rank, which='LM', return_singular_vectors=True)
+
+savetxt(file_name + '_U.txt', u, fmt='%1.4e')
+savetxt(file_name + '_S.txt', s, fmt='%1.4e')
+savetxt(file_name + '_Vt.txt', transpose(vt), fmt='%1.4e') # useless because symm
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -51,8 +55,10 @@ ax = fig.add_subplot(111)
 # y = u[:,1]*sqrt(s[1])
 # z = u[:,2]*sqrt(s[2])
 elements = random.choice(dim,(10000,1),replace=True) # pick 1000 random points to plot
-x = u[elements,0]*sqrt(s[0])
-y = u[elements,1]*sqrt(s[1])
+# x = u[elements,0]*sqrt(s[0])
+# y = u[elements,1]*sqrt(s[1])
+x = u[:,0]*sqrt(s[0])
+y = u[:,1]*sqrt(s[1])
 ax.set_title(file_name)
 ax.set_xlabel('X Label')
 ax.set_ylabel('Y Label')

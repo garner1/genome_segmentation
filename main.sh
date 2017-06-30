@@ -29,16 +29,21 @@ window=10
 # bash ./word_count.sh $window $datadir $chr
 # echo "Done"
 
-# echo "Prepare vocabulary: a 1to1 word-index map"
-# bash ./get_vocabulary.sh $datadir $chr
-# echo "Done"
 
-# echo "Prepare the final matrix chr??.mat which has wordIndex-contextIndex-count-rowMarginal-colMarginal format"
-# bash ./prepare_matrix.sh $datadir $chr
-# echo "Done"
+echo "Filter the paired weigth-count matrix based on min number of counts"
+cat $datadir/paired_count-weight.txt | awk '$4>1{print $1"\t"$2"\t"$3}' > $datadir/word-context-weight.txt
+echo "Done"
+
+echo "Prepare vocabulary: a 1to1 word-index map"
+bash ./get_vocabulary.sh $datadir
+echo "Done"
+
+echo "Prepare the final matrix chr??.mat which has wordIndex-contextIndex-count-rowMarginal-colMarginal format"
+bash ./prepare_matrix.sh $datadir $chr
+echo "Done"
 
 D=`cat $datadir/vocabulary|wc -l` # size of the vocabulary
-k=10				  # shift factor in SPPMI
+k=1				  # shift factor in SPPMI
 rank=2				  # truncation dim in svd
 python cooccurrence_matrix.py $datadir/"$chr".mat $D $k $rank
 echo "Done"
