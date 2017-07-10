@@ -1,24 +1,51 @@
 #!/usr/bin/env bash
 
-####################################
-# PROBLEM 1: THE MC MODEL FROM ALL GENOME HAS THE ...NNN... REGION ISSUE TO BE SOLVED;
-# PROBLEM 2: WHAT IS THE BEST GENOMIC LIBRARY TO READ? GENES, ALL GENOME, FASTQ FILES? PROB FOR EXPERIMENTAL REASONS FASTQ FROM A REFERENCE GENOME ARE THE MORE RELEVANT
-# PROBLEM 3: INTRODUCE A SIMULATED SEQUENCING EXPERIMENT AND BUILD THE MODEL FROM FASTQ FILES
-####################################
-
 # in_dim=3
 # out_dim=3
 datadir=~/Work/dataset/genome_segmentation
-threshold_on_conditionInformation=0.1
-window=10
 
 # echo 'First run the R-script which produces the reference homogeneous markov model: MC_model_from_fastq.R. The output file is contained in ~/Work/dataset/genome_segmentation/transitionMatrix_3to3.csv'
 
-echo 'Apply MC model to fastq file'
-bash ./MC_mixing.sh $datadir/test.fastq $datadir/transitionMatrix_3to3.csv 10
+# GENERATE FASTQ FILES USING NEAT OR VARSIM_RUN
+# !!! check directories and parameters !!!!
+parallel "python ~/tools/neat-genreads/genReads.py -r ~/igv/genomes/hg19.fasta -R 50 -o ~/Work/dataset/genome_segmentation/simulated_data -c 1 --job {} 32" ::: `seq 32`
+python ~/tools/neat-genreads/mergeJobs.py -i  /home/garner1/tool_test/neat -o  /home/garner1/tool_test -s ~/tools/samtools-1.2
+
+
+echo 'Split fastq files into chuncks ...'
+split -l 100000 --additional-suffix=.read $datadir/test-1line.fastq # THE INPUT FILE CONTAINS ONLY THE READ SEQUENCE
 echo 'Done'
 
+echo 'Process the reads into word cooccurrences ...'
+parallel "./read_processing.py {}" ::: $datadir/x??
+echo 'Done'
+
+echo 'Pull together the output reads ...'
+cat $datadir/*.read_weight.txt | tr -d "()\',"  | tr ' .' '\t,' | datamash -s -g 1,2 sum 3 | tr ',' '.' > $datadir/joined.read_weight.txt & pid1=$!
+cat $datadir/*.read_counter.txt | tr -d "()\',"  | tr ' ' '\t' | datamash -s -g 1,2 sum 3 > $datadir/joined.read_counter.txt & pid2=$!
+wait $pid1
+wait $pid2
+echo 'Done'
+
+#########################################################################
+# rm -f $datadir/contexts.txt
+# echo 'Apply MC model to fastq file'
+# bash ./MC_mixing.sh $datadir/test-1line.fastq $datadir/transitionMatrix_3to3.csv 
+# # | tr -d "[]\' " | tr ',' '\t' >> $datadir/contexts.txt
+# echo 'Done'
+
+# echo 'Count word co-occurrences'
+# ./count_pairs.py $datadir/contexts.txt
+# echo 'Done'
+
+
 ###########################################################################
+# in_dim=3
+# out_dim=3
+# datadir=~/Work/dataset/genome_segmentation
+# threshold_on_conditionInformation=0.1
+# window=10
+
 # echo 'Combine Markov chain models of the genome...'
 # bash ./MC_mixing.sh $datadir $chr
 # echo 'Done'

@@ -1,0 +1,9 @@
+#100K LINES ARE A GOOD COMPROMISE BTW CPU TIME AND MEMORY
+split -l 100000 --additional-suffix=.read test-1line.fastq # THE INPUT FILE CONTAINS ONLY THE READ SEQUENCE
+
+# TAKES 1 DAY TO PROCESS THIS
+parallel "./alternative.py {}" ::: /home/garner1/Work/dataset/genome_segmentation/x??
+
+# PULL TOGETHER OUTPUT
+cat *.read_weight.txt|tr -d "()\'," |tr ' .' '\t,'|datamash -s -g 1,2 sum 3|tr ',' '.' > joined.read_weight.txt
+cat *.read_counter.txt|tr -d "()\'," |tr ' ' '\t'|datamash -s -g 1,2 sum 3 > joined.read_counter.txt
