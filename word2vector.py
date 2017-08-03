@@ -19,7 +19,7 @@ mypath = sys.argv[1]
 onlyfiles = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
 sentences = []
-for f in listdir(mypath):
+for f in listdir(mypath):       # sequentially add all files in directory
     filename = join(mypath, f)
     with open(filename,'rb') as f:
         sentences.extend(pickle.load(f))

@@ -12,13 +12,13 @@ import pickle
 
 fastq_file = str(sys.argv[1])
 column_names = ['6mer','information']
-model = pd.read_csv('/home/garner1/Work/dataset/genome_segmentation/transitionMatrix_3to3.csv',sep=' ',names=column_names)
+model = pd.read_csv('/home/garner1/Work/dataset/genome_segmentation/transitionMatrix_3to3.csv', sep=' ', names=column_names)
 column_names = ['read']
-reads = pd.read_csv(fastq_file, header=None,names=column_names)
+reads = pd.read_csv(fastq_file, header=None, names=column_names)
 
 sentences = []
 for index, row in reads.iterrows():
-    kmers = pd.DataFrame([row['read'][i:i+6] for i in range(len(row['read'])-5)])
+    kmers = pd.DataFrame([row['read'][i:i+6] for i in range(len(row['read'])-5)]) # the parameter 6 is due to in_dim+out_dim=3+3
     kmers.columns = ['6mer']
     infodata = kmers.merge(model, on='6mer', how='left')
     loc = argrelextrema(infodata.values[:,1], np.greater) # find location of the maxima

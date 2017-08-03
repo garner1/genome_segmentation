@@ -4,28 +4,39 @@
 # out_dim=3
 datadir=~/Work/dataset/genome_segmentation
 
-# echo 'First run the R-script which produces the reference homogeneous markov model: MC_model_from_fastq.R. The output file is contained in ~/Work/dataset/genome_segmentation/transitionMatrix_3to3.csv'
-
 # GENERATE FASTQ FILES USING NEAT OR VARSIM_RUN
 # !!! check directories and parameters !!!!
 parallel "python ~/tools/neat-genreads/genReads.py -r ~/igv/genomes/hg19.fasta -R 50 -o ~/Work/dataset/genome_segmentation/simulated_data -c 1 --job {} 32" ::: `seq 32`
 python ~/tools/neat-genreads/mergeJobs.py -i  /home/garner1/tool_test/neat -o  /home/garner1/tool_test -s ~/tools/samtools-1.2
 
+# Run the R-script which produces the reference homogeneous markov model: MC_model_from_fastq.R. The output file is contained in ~/Work/dataset/genome_segmentation/transitionMatrix_3to3.csv'
 
 echo 'Split fastq files into chuncks ...'
 split -l 100000 --additional-suffix=.read $datadir/test-1line.fastq # THE INPUT FILE CONTAINS ONLY THE READ SEQUENCE
-echo 'Done'
+echo 'Done!'
 
-echo 'Process the reads into word cooccurrences ...'
-parallel "./read_processing.py {}" ::: $datadir/x??
-echo 'Done'
+echo 'Create sentences ...'
+parallel "bash create_sentences.py {}" ::: $datadir/x?? # these are pickle files TO BE USED IN GENSIM WORD2VEC sequentially, do not concatenate with cat
+echo 'Done!'
 
-echo 'Pull together the output reads ...'
-cat $datadir/*.read_weight.txt | tr -d "()\',"  | tr ' .' '\t,' | datamash -s -g 1,2 sum 3 | tr ',' '.' > $datadir/joined.read_weight.txt & pid1=$!
-cat $datadir/*.read_counter.txt | tr -d "()\',"  | tr ' ' '\t' | datamash -s -g 1,2 sum 3 > $datadir/joined.read_counter.txt & pid2=$!
-wait $pid1
-wait $pid2
-echo 'Done'
+echo 'Run gensim word2vec implementation ...'
+bash word2vector.py ~/Work/dataset/genome_segmentation/sentence_directory 
+echo 'Done!'
+#########################################################################
+# echo 'Process the reads into word cooccurrences ...'
+# parallel "./read_processing.py {}" ::: $datadir/x??
+# echo 'Done'
+
+# echo 'Pull together the output reads ...'
+# cat $datadir/*.read_weight.txt | tr -d "()\',"  | tr ' .' '\t,' | datamash -s -g 1,2 sum 3 | tr ',' '.' > $datadir/joined.read_weight.txt & pid1=$!
+# cat $datadir/*.read_counter.txt | tr -d "()\',"  | tr ' ' '\t' | datamash -s -g 1,2 sum 3 > $datadir/joined.read_counter.txt & pid2=$!
+# wait $pid1
+# wait $pid2
+# echo 'Done'
+
+# echo 'Get the word-index map ...'
+# bash get_vocabulary.sh $datadir/joined.read_counter.txt
+# echo 'Done'
 
 #########################################################################
 # rm -f $datadir/contexts.txt
